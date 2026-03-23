@@ -35,6 +35,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
+import { createKiro } from "./sdk/kiro"
 import { createXai } from "@ai-sdk/xai"
 import { createMistral } from "@ai-sdk/mistral"
 import { createGroq } from "@ai-sdk/groq"
@@ -53,6 +54,7 @@ import {
   isWorkflowModel,
   discoverWorkflowModels,
 } from "gitlab-ai-provider"
+import { hasToken } from "./sdk/kiro/kiro-auth"
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers"
 import { GoogleAuth } from "google-auth-library"
 import { ProviderTransform } from "./transform"
@@ -144,6 +146,8 @@ export namespace Provider {
     "gitlab-ai-provider": createGitLab,
     "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
     "venice-ai-sdk-provider": createVenice,
+    // @ts-ignore kiro provider only implements languageModel
+    kiro: createKiro,
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -813,6 +817,19 @@ export namespace Provider {
               "X-Title": "opencode",
             },
           },
+        }),
+      kiro: () =>
+        Effect.promise(async () => {
+          const found = await hasToken()
+          if (!found) return { autoload: false }
+          return {
+            autoload: true,
+            async getModel(sdk: ReturnType<typeof createKiro>, modelID: string, options?: Record<string, any>) {
+              const ctx = options?.["context"] as number | undefined
+              if (!ctx) return sdk.languageModel(modelID)
+              return createKiro({ context: ctx }).languageModel(modelID)
+            },
+          }
         }),
     }
   }

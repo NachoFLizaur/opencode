@@ -218,6 +218,17 @@ export namespace LLM {
             })
           }
 
+          // The kiro provider injects a "thinking" tool at the API level for
+          // chain-of-thought reasoning. Register a passthrough executor so the
+          // AI SDK completes the tool-result round-trip.
+          if (item.id === "kiro" && !input.small && !tools["thinking"]) {
+            tools["thinking"] = tool({
+              description: "Internal reasoning tool",
+              inputSchema: jsonSchema({ type: "object", properties: { thought: { type: "string" } }, required: ["thought"] }),
+              execute: async (args) => ({ output: args.thought, title: "Thinking", metadata: {} }),
+            })
+          }
+
           // Wire up toolExecutor for DWS workflow models so that tool calls
           // from the workflow service are executed via opencode's tool system
           // and results sent back over the WebSocket.

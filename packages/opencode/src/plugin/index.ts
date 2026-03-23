@@ -14,6 +14,7 @@ import { CodexAuthPlugin } from "./codex"
 import { Session } from "../session"
 import { NamedError } from "@opencode-ai/util/error"
 import { CopilotAuthPlugin } from "./github-copilot/copilot"
+import { KiroAuthPlugin } from "./kiro"
 import { gitlabAuthPlugin as GitlabAuthPlugin } from "opencode-gitlab-auth"
 import { PoeAuthPlugin } from "opencode-poe-auth"
 import { CloudflareAIGatewayAuthPlugin, CloudflareWorkersAuthPlugin } from "./cloudflare"
@@ -55,13 +56,14 @@ export namespace Plugin {
   export class Service extends Context.Service<Service, Interface>()("@opencode/Plugin") {}
 
   // Built-in plugins that are directly imported (not installed from npm)
-  const INTERNAL_PLUGINS: PluginInstance[] = [
+const INTERNAL_PLUGINS: PluginInstance[] = [
     CodexAuthPlugin,
     CopilotAuthPlugin,
     GitlabAuthPlugin,
     PoeAuthPlugin,
     CloudflareWorkersAuthPlugin,
     CloudflareAIGatewayAuthPlugin,
+    KiroAuthPlugin,
   ]
 
   function isServerPlugin(value: unknown): value is PluginInstance {

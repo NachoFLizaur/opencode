@@ -34,6 +34,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
+import { createKiro } from "./sdk/kiro"
 import { createXai } from "@ai-sdk/xai"
 import { createMistral } from "@ai-sdk/mistral"
 import { createGroq } from "@ai-sdk/groq"
@@ -50,6 +51,8 @@ import {
   isWorkflowModel,
   discoverWorkflowModels,
 } from "gitlab-ai-provider"
+import { hasToken, getToken } from "./sdk/kiro/kiro-auth"
+import type { KiroListModelsResponse } from "./sdk/kiro/kiro-api-types"
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers"
 import { GoogleAuth } from "google-auth-library"
 import { ProviderTransform } from "./transform"
@@ -139,6 +142,8 @@ export namespace Provider {
     "@ai-sdk/vercel": createVercel,
     "gitlab-ai-provider": createGitLab,
     "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
+    // @ts-ignore kiro provider only implements languageModel
+    kiro: createKiro,
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -769,6 +774,97 @@ export namespace Provider {
             "HTTP-Referer": "https://opencode.ai/",
             "X-Title": "opencode",
           },
+        },
+      }
+    },
+    kiro: async (input) => {
+      const found = await hasToken()
+      if (!found) return { autoload: false }
+
+      return {
+        autoload: true,
+        async getModel(sdk: ReturnType<typeof createKiro>, modelID: string, options?: Record<string, any>) {
+          const ctx = options?.["context"] as number | undefined
+          if (!ctx) return sdk.languageModel(modelID)
+          return createKiro({ context: ctx }).languageModel(modelID)
+        },
+        async discoverModels(): Promise<Record<string, Model>> {
+          const token = await getToken()
+          if (!token) {
+            log.info("kiro model discovery skipped: no token")
+            return {}
+          }
+
+          const endpoint = "https://q.us-east-1.amazonaws.com"
+          const response = await fetch(`${endpoint}/listAvailableModels`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/x-amz-json-1.0",
+              "User-Agent": "aws-sdk-js/1.0.27 ua/2.1 os/darwin lang/js api/codewhispererstreaming#1.0.27 m/E Kiro-opencode",
+              "x-amz-user-agent": "aws-sdk-js/1.0.27 Kiro-opencode",
+              "x-amzn-codewhisperer-optout": "true",
+              "x-amzn-kiro-agent-mode": "vibe",
+              "amz-sdk-invocation-id": crypto.randomUUID(),
+              "amz-sdk-request": "attempt=1; max=3",
+            },
+            body: JSON.stringify({ origin: "AI_EDITOR" }),
+          }).catch((e: unknown) => {
+            log.warn("kiro model discovery fetch failed", { error: e })
+            return undefined
+          })
+
+          if (!response || !response.ok) {
+            log.warn("kiro model discovery failed", { status: response?.status })
+            return {}
+          }
+
+          const body = (await response.json().catch(() => ({}))) as KiroListModelsResponse
+          if (!body.models || body.models.length === 0) {
+            log.info("kiro model discovery: no models returned")
+            return {}
+          }
+
+          const models: Record<string, Model> = {}
+          for (const m of body.models) {
+            if (input.models[m.modelId]) continue
+            models[m.modelId] = {
+              id: ModelID.make(m.modelId),
+              providerID: ProviderID.make("kiro"),
+              name: m.displayName ?? m.modelId,
+              family: "",
+              api: {
+                id: m.modelId,
+                url: endpoint,
+                npm: "kiro",
+              },
+              status: "active",
+              headers: {},
+              options: {},
+              cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+              limit: {
+                context: m.contextWindow ?? 200000,
+                output: m.maxOutputTokens ?? 8192,
+              },
+              capabilities: {
+                temperature: false,
+                reasoning: m.capabilities?.includes("REASONING") ?? false,
+                attachment: true,
+                toolcall: true,
+                input: { text: true, audio: false, image: true, video: false, pdf: true },
+                output: { text: true, audio: false, image: false, video: false, pdf: false },
+                interleaved: false,
+              },
+              release_date: "",
+              variants: {},
+            }
+          }
+
+          log.info("kiro model discovery complete", {
+            count: Object.keys(models).length,
+            models: Object.keys(models),
+          })
+          return models
         },
       }
     },
@@ -1420,6 +1516,7 @@ export namespace Provider {
               ? await s.modelLoaders[model.providerID](sdk, model.api.id, {
                   ...provider.options,
                   ...model.options,
+                  context: model.limit.context,
                 })
               : sdk.languageModel(model.api.id)
             s.models.set(key, language)

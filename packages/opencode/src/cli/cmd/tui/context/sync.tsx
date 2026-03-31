@@ -27,6 +27,7 @@ import { useExit } from "./exit"
 import { useArgs } from "./args"
 import { batch, onMount } from "solid-js"
 import { Log } from "@/util/log"
+import { getQuota } from "@/provider/sdk/kiro/kiro-quota"
 import type { Path } from "@opencode-ai/sdk"
 import type { Workspace } from "@opencode-ai/sdk/v2"
 
@@ -73,6 +74,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       }
       formatter: FormatterStatus[]
       vcs: VcsInfo | undefined
+      provider_quota: { currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined
       path: Path
       workspaceList: Workspace[]
     }>({
@@ -101,6 +103,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       mcp_resource: {},
       formatter: [],
       vcs: undefined,
+      provider_quota: undefined,
       path: { state: "", config: "", worktree: "", directory: "" },
       workspaceList: [],
     })
@@ -231,6 +234,8 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
         case "session.status": {
           setStore("session_status", event.properties.sessionID, event.properties.status)
+          if (event.properties.status.type === "idle")
+            getQuota().then((x) => x && setStore("provider_quota", x))
           break
         }
 
@@ -422,6 +427,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.provider.auth().then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
             sdk.client.vcs.get().then((x) => setStore("vcs", reconcile(x.data))),
             sdk.client.path.get().then((x) => setStore("path", reconcile(x.data!))),
+            getQuota().then((x) => x && setStore("provider_quota", x)),
             syncWorkspaces(),
           ]).then(() => {
             setStore("status", "complete")

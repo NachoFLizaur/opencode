@@ -29,6 +29,7 @@ import { useExit } from "./exit"
 import { useArgs } from "./args"
 import { batch, createEffect, on } from "solid-js"
 import { Log } from "@/util/log"
+import { getQuota } from "@/provider/sdk/kiro/kiro-quota"
 import { ConsoleState, emptyConsoleState, type ConsoleState as ConsoleStateType } from "@/config/console-state"
 
 export const { use: useSync, provider: SyncProvider } = createSimpleContext({
@@ -74,6 +75,9 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         [key: string]: McpResource
       }
       formatter: FormatterStatus[]
+      provider_quota: { currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined
+      workspaceList: Workspace[]
+>>>>>>> e8a66443d (feat(opencode): add Kiro subscription quota display to TUI)
       vcs: VcsInfo | undefined
     }>({
       provider_next: {
@@ -101,7 +105,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       mcp: {},
       mcp_resource: {},
       formatter: [],
-      vcs: undefined,
+      provider_quota: undefined,
     })
 
     const event = useEvent()
@@ -225,6 +229,8 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
         case "session.status": {
           setStore("session_status", event.properties.sessionID, event.properties.status)
+          if (event.properties.status.type === "idle")
+            getQuota().then((x) => x && setStore("provider_quota", x))
           break
         }
 
@@ -431,7 +437,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.provider.auth({ workspace }).then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
             sdk.client.vcs.get({ workspace }).then((x) => setStore("vcs", reconcile(x.data))),
             project.workspace.sync(),
-          ]).then(() => {
+            getQuota().then((x) => x && setStore("provider_quota", x)),
             setStore("status", "complete")
           })
         })

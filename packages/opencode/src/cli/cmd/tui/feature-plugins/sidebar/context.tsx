@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@opencode-ai/sdk/v2"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
-import { createMemo } from "solid-js"
+import { createMemo, createSignal } from "solid-js"
+import { getQuota } from "@/provider/sdk/kiro/kiro-quota"
 
 const id = "internal:sidebar-context"
 
@@ -13,6 +14,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
   const cost = createMemo(() => msg().reduce((sum, item) => sum + (item.role === "assistant" ? item.cost : 0), 0))
+  const [quota, setQuota] = createSignal<{ currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined>()
+  getQuota().then((x) => x && setQuota(x))
 
   const state = createMemo(() => {
     const last = msg().findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0)
@@ -39,7 +42,12 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       </text>
       <text fg={theme().textMuted}>{state().tokens.toLocaleString()} tokens</text>
       <text fg={theme().textMuted}>{state().percent ?? 0}% used</text>
-      <text fg={theme().textMuted}>{money.format(cost())} spent</text>
+      <text fg={theme().textMuted}>
+        {quota()
+          ? `${quota()!.subscriptionTitle}: ${quota()!.currentUsage.toLocaleString()}/${quota()!.usageLimit.toLocaleString()} credits`
+          : money.format(cost())}{" "}
+        spent
+      </text>
     </box>
   )
 }

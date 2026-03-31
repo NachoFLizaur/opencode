@@ -943,7 +943,7 @@ describe("kiro-eventstream", () => {
 })
 
 // ---------------------------------------------------------------------------
-// 5. kiro-language-model — LanguageModelV2 doGenerate/doStream
+// 5. kiro-language-model — LanguageModelV3 doGenerate/doStream
 // ---------------------------------------------------------------------------
 
 describe("kiro-language-model", () => {
@@ -1041,9 +1041,9 @@ describe("kiro-language-model", () => {
     expect(deltas).toEqual(["Hello ", "world"])
 
     const finish = parts.find((p) => p.type === "finish")!
-    expect(finish.finishReason).toBe("stop")
-    expect((finish.usage as { inputTokens: number }).inputTokens).toBe(10)
-    expect((finish.usage as { outputTokens: number }).outputTokens).toBe(5)
+    expect(finish.finishReason).toEqual({ unified: "stop", raw: undefined })
+    expect((finish.usage as { inputTokens: { total: number } }).inputTokens.total).toBe(10)
+    expect((finish.usage as { outputTokens: { total: number } }).outputTokens.total).toBe(5)
 
     getTokenMock.mockRestore()
   })
@@ -1138,7 +1138,7 @@ describe("kiro-language-model", () => {
     expect(call.input).toBe('{"command":"ls"}')
 
     const finish = parts.find((p) => p.type === "finish")!
-    expect(finish.finishReason).toBe("tool-calls")
+    expect(finish.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
 
     getTokenMock.mockRestore()
   })
@@ -1171,9 +1171,9 @@ describe("kiro-language-model", () => {
     if (result.content[0].type === "text") {
       expect(result.content[0].text).toBe("Hello world")
     }
-    expect(result.finishReason).toBe("stop")
-    expect(result.usage.inputTokens).toBe(15)
-    expect(result.usage.outputTokens).toBe(8)
+    expect(result.finishReason).toEqual({ unified: "stop", raw: undefined })
+    expect(result.usage.inputTokens.total).toBe(15)
+    expect(result.usage.outputTokens.total).toBe(8)
     expect(result.warnings).toEqual([])
 
     getTokenMock.mockRestore()
@@ -1219,7 +1219,7 @@ describe("kiro-language-model", () => {
       expect(result.content[0].toolCallId).toBe("tu-2")
       expect(result.content[0].input).toBe('{"path":"/tmp"}')
     }
-    expect(result.finishReason).toBe("tool-calls")
+    expect(result.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
 
     getTokenMock.mockRestore()
   })
@@ -1280,7 +1280,7 @@ describe("kiro-language-model", () => {
   test("model exposes specificationVersion, provider, and modelId", async () => {
     const { KiroLanguageModel } = await import("../../src/provider/sdk/kiro/kiro-language-model")
     const model = new KiroLanguageModel("kiro-v1", { provider: "kiro" })
-    expect(model.specificationVersion).toBe("v2")
+    expect(model.specificationVersion).toBe("v3")
     expect(model.provider).toBe("kiro")
     expect(model.modelId).toBe("kiro-v1")
     expect(model.defaultObjectGenerationMode).toBeUndefined()
@@ -1419,10 +1419,9 @@ describe("kiro-language-model", () => {
     expect(result.content).toHaveLength(2)
     expect(result.content[0].type).toBe("text")
     expect(result.content[1].type).toBe("tool-call")
-    expect(result.finishReason).toBe("tool-calls")
-    expect(result.usage.inputTokens).toBe(30)
-    expect(result.usage.outputTokens).toBe(20)
-    expect(result.usage.totalTokens).toBe(50)
+    expect(result.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
+    expect(result.usage.inputTokens.total).toBe(30)
+    expect(result.usage.outputTokens.total).toBe(20)
 
     getTokenMock.mockRestore()
   })
@@ -1496,7 +1495,7 @@ describe("kiro-language-model", () => {
 
     // Finish reason should be "tool-calls" since thinking is tracked as a tool call
     const finish = parts.find((p) => p.type === "finish")!
-    expect(finish.finishReason).toBe("tool-calls")
+    expect(finish.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
 
     getTokenMock.mockRestore()
   })
@@ -1631,7 +1630,7 @@ describe("kiro-language-model", () => {
 
     // Finish reason should be "tool-calls" since there is a real tool call
     const finish = parts.find((p) => p.type === "finish")!
-    expect(finish.finishReason).toBe("tool-calls")
+    expect(finish.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
 
     getTokenMock.mockRestore()
   })
@@ -1681,7 +1680,7 @@ describe("kiro-language-model", () => {
       expect(result.content[1].toolName).toBe("thinking")
       expect(result.content[1].input).toBe('{"thought": "Step 1: multiply"}')
     }
-    expect(result.finishReason).toBe("tool-calls")
+    expect(result.finishReason).toEqual({ unified: "tool-calls", raw: undefined })
 
     getTokenMock.mockRestore()
   })
@@ -1813,7 +1812,7 @@ describe("kiro-provider factory", () => {
     const model = provider.languageModel("kiro-v1")
     expect(model).toBeInstanceOf(KiroLanguageModel)
     expect(model.modelId).toBe("kiro-v1")
-    expect(model.specificationVersion).toBe("v2")
+    expect(model.specificationVersion).toBe("v3")
   })
 
   test("createKiro passes custom fetch to model", async () => {

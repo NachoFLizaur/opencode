@@ -2275,6 +2275,26 @@ export type GlobalUpgradeResponses = {
 
 export type GlobalUpgradeResponse = GlobalUpgradeResponses[keyof GlobalUpgradeResponses]
 
+export type GlobalProviderQuotaData = {
+  body?: never
+  path?: never
+  query?: never
+  url: "/global/provider/quota"
+}
+
+export type GlobalProviderQuotaResponses = {
+  /**
+   * Usage quota
+   */
+  200: {
+    currentUsage: number
+    usageLimit: number
+    subscriptionTitle: string
+  } | null
+}
+
+export type GlobalProviderQuotaResponse = GlobalProviderQuotaResponses[keyof GlobalProviderQuotaResponses]
+
 export type AuthRemoveData = {
   body?: never
   path: {

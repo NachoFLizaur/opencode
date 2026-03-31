@@ -390,6 +390,7 @@ export const dict = {
   "context.stats.userMessages": "User Messages",
   "context.stats.assistantMessages": "Assistant Messages",
   "context.stats.totalCost": "Total Cost",
+  "context.stats.subscription": "Subscription",
   "context.stats.sessionCreated": "Session Created",
   "context.stats.lastActivity": "Last Activity",
 

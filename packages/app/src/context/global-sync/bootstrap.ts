@@ -357,4 +357,7 @@ export async function bootstrapDirectory(input: {
         description: formatServerError(err, input.translate),
       })
     })
+  void retry(() => input.sdk.global.provider.quota())
+    .then((x) => x.data && input.setStore("provider_quota", x.data))
+    .catch(() => {})
 }

@@ -282,5 +282,35 @@ export const GlobalRoutes = lazy(() =>
         })
         return c.json({ success: true, version: target })
       },
+    )
+    .get(
+      "/provider/quota",
+      describeRoute({
+        summary: "Get provider quota",
+        description: "Get current usage quota for subscription-based providers.",
+        operationId: "global.provider.quota",
+        responses: {
+          200: {
+            description: "Usage quota",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z
+                    .object({
+                      currentUsage: z.number(),
+                      usageLimit: z.number(),
+                      subscriptionTitle: z.string(),
+                    })
+                    .nullable(),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        const { getQuota } = await import("../../provider/sdk/kiro/kiro-quota")
+        return c.json((await getQuota()) ?? null)
+      },
     ),
 )

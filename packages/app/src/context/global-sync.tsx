@@ -325,6 +325,14 @@ function createGlobalSync() {
           })
       },
     })
+    if (event.type === "session.status") {
+      const props = event.properties as { status: { type: string } }
+      if (props.status.type === "idle")
+        void sdkFor(directory)
+          .global.provider.quota()
+          .then((x) => x.data && setStore("provider_quota", x.data))
+          .catch(() => {})
+    }
   })
 
   onCleanup(unsub)

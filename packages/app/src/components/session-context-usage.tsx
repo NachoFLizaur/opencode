@@ -55,6 +55,9 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
   const metrics = createMemo(() => getSessionContextMetrics(messages(), providers.all()))
   const context = createMemo(() => metrics().context)
   const cost = createMemo(() => {
+    const quota = sync.data.provider_quota
+    if (quota)
+      return `${quota.subscriptionTitle}: ${quota.currentUsage.toLocaleString()}/${quota.usageLimit.toLocaleString()} credits`
     return usd().format(metrics().totalCost)
   })
 
@@ -96,7 +99,9 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
       </Show>
       <div class="flex items-center gap-2">
         <span class="text-text-invert-strong">{cost()}</span>
-        <span class="text-text-invert-base">{language.t("context.usage.cost")}</span>
+        <Show when={!sync.data.provider_quota}>
+          <span class="text-text-invert-base">{language.t("context.usage.cost")}</span>
+        </Show>
       </div>
     </div>
   )

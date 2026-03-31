@@ -1,11 +1,10 @@
 import type {
-  LanguageModelV2,
-  LanguageModelV2CallOptions,
-  LanguageModelV2CallWarning,
-  LanguageModelV2Content,
-  LanguageModelV2FinishReason,
-  LanguageModelV2StreamPart,
-  LanguageModelV2Usage,
+  LanguageModelV3,
+  LanguageModelV3CallOptions,
+  LanguageModelV3Content,
+  LanguageModelV3FinishReason,
+  LanguageModelV3StreamPart,
+  LanguageModelV3Usage,
 } from "@ai-sdk/provider"
 import { getToken } from "./kiro-auth"
 import { translate } from "./kiro-translate"
@@ -50,13 +49,12 @@ function readable(
 
 function transform(context: number): TransformStream<
   KiroStreamEvent,
-  LanguageModelV2StreamPart
+  LanguageModelV3StreamPart
 > {
   const tools = new Map<string, { name: string; input: string }>()
-  const usage: LanguageModelV2Usage = {
-    inputTokens: 0,
-    outputTokens: 0,
-    totalTokens: 0,
+  const usage: LanguageModelV3Usage = {
+    inputTokens: { total: 0, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+    outputTokens: { total: 0, text: undefined, reasoning: undefined },
   }
   const state = { text: false, started: false }
 
@@ -133,17 +131,15 @@ function transform(context: number): TransformStream<
         }
         case "usage": {
           if (event.payload.inputTokens !== undefined)
-            usage.inputTokens = event.payload.inputTokens
+            usage.inputTokens.total = event.payload.inputTokens
           if (event.payload.outputTokens !== undefined)
-            usage.outputTokens = event.payload.outputTokens
-          usage.totalTokens = event.payload.totalTokens ?? (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)
+            usage.outputTokens.total = event.payload.outputTokens
           return
         }
         case "context_usage": {
           const pct = event.payload.contextUsagePercentage ?? event.payload.contextTokens ?? 0
-          usage.inputTokens = Math.round((pct / 100) * context)
-          usage.outputTokens = usage.outputTokens || 1
-          usage.totalTokens = (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)
+          usage.inputTokens.total = Math.round((pct / 100) * context)
+          usage.outputTokens.total = usage.outputTokens.total || 1
           return
         }
         case "error": {
@@ -156,8 +152,8 @@ function transform(context: number): TransformStream<
       if (state.text) {
         controller.enqueue({ type: "text-end", id: "txt-0" })
       }
-      const reason: LanguageModelV2FinishReason =
-        tools.size > 0 ? "tool-calls" : "stop"
+      const reason: LanguageModelV3FinishReason =
+        { unified: tools.size > 0 ? "tool-calls" : "stop", raw: undefined }
       controller.enqueue({
         type: "finish",
         finishReason: reason,
@@ -167,8 +163,8 @@ function transform(context: number): TransformStream<
   })
 }
 
-export class KiroLanguageModel implements LanguageModelV2 {
-  readonly specificationVersion = "v2" as const
+export class KiroLanguageModel implements LanguageModelV3 {
+  readonly specificationVersion = "v3" as const
   readonly provider: string
   readonly modelId: string
   readonly defaultObjectGenerationMode = undefined
@@ -211,8 +207,8 @@ export class KiroLanguageModel implements LanguageModelV2 {
   }
 
   async doStream(
-    options: LanguageModelV2CallOptions,
-  ): Promise<Awaited<ReturnType<LanguageModelV2["doStream"]>>> {
+    options: LanguageModelV3CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV3["doStream"]>>> {
     const token = await getToken()
     if (!token)
       throw new KiroAuthError({ message: "No Kiro auth token available" })
@@ -270,21 +266,20 @@ export class KiroLanguageModel implements LanguageModelV2 {
   }
 
   async doGenerate(
-    options: LanguageModelV2CallOptions,
-  ): Promise<Awaited<ReturnType<LanguageModelV2["doGenerate"]>>> {
+    options: LanguageModelV3CallOptions,
+  ): Promise<Awaited<ReturnType<LanguageModelV3["doGenerate"]>>> {
     const result = await this.doStream(options)
-    const content: Array<LanguageModelV2Content> = []
+    const content: Array<LanguageModelV3Content> = []
     const parts: Array<string> = []
     const tools = new Map<
       string,
       { name: string; input: string }
     >()
-    const usage: LanguageModelV2Usage = {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
+    const usage: LanguageModelV3Usage = {
+      inputTokens: { total: 0, noCache: undefined, cacheRead: undefined, cacheWrite: undefined },
+      outputTokens: { total: 0, text: undefined, reasoning: undefined },
     }
-    const state = { reason: "stop" as LanguageModelV2FinishReason }
+    const state = { reason: { unified: "stop", raw: undefined } as LanguageModelV3FinishReason }
 
     const reader = result.stream.getReader()
     const read = (): Promise<void> =>
@@ -307,7 +302,6 @@ export class KiroLanguageModel implements LanguageModelV2 {
           case "finish":
             usage.inputTokens = value.usage.inputTokens
             usage.outputTokens = value.usage.outputTokens
-            usage.totalTokens = value.usage.totalTokens
             state.reason = value.finishReason
             break
         }
@@ -334,7 +328,7 @@ export class KiroLanguageModel implements LanguageModelV2 {
       content,
       finishReason: state.reason,
       usage,
-      warnings: [] as Array<LanguageModelV2CallWarning>,
+      warnings: [],
       request: result.request,
       response: {
         headers: result.response?.headers,

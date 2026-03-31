@@ -1,4 +1,4 @@
-import type { LanguageModelV2 } from "@ai-sdk/provider"
+import type { LanguageModelV3 } from "@ai-sdk/provider"
 import { KiroLanguageModel } from "./kiro-language-model"
 
 export interface KiroProviderSettings {
@@ -7,12 +7,12 @@ export interface KiroProviderSettings {
 }
 
 export interface KiroProvider {
-  (modelId: string): LanguageModelV2
-  languageModel(modelId: string): LanguageModelV2
+  (modelId: string): LanguageModelV3
+  languageModel(modelId: string): LanguageModelV3
 }
 
 export function createKiro(settings: KiroProviderSettings = {}): KiroProvider {
-  const provider = (modelId: string): LanguageModelV2 =>
+  const provider = (modelId: string): LanguageModelV3 =>
     new KiroLanguageModel(modelId, {
       provider: "kiro",
       fetch: settings.fetch,

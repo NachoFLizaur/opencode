@@ -1,9 +1,9 @@
 import type {
-  LanguageModelV2Prompt,
-  LanguageModelV2TextPart,
-  LanguageModelV2ToolCallPart,
-  LanguageModelV2ToolResultPart,
-  LanguageModelV2FunctionTool,
+  LanguageModelV3Prompt,
+  LanguageModelV3TextPart,
+  LanguageModelV3ToolCallPart,
+  LanguageModelV3ToolResultPart,
+  LanguageModelV3FunctionTool,
 } from "@ai-sdk/provider"
 import type {
   KiroAssistantResponseMessage,
@@ -14,7 +14,7 @@ import type {
 } from "./kiro-api-types"
 
 function tools(
-  input: ReadonlyArray<LanguageModelV2FunctionTool>,
+  input: ReadonlyArray<LanguageModelV3FunctionTool>,
 ): ReadonlyArray<KiroToolSpec> {
   return input.map((tool) => ({
     toolSpecification: {
@@ -29,12 +29,12 @@ function text(
   parts: ReadonlyArray<{ type: string; text?: string }>,
 ): string {
   return parts
-    .filter((p): p is LanguageModelV2TextPart => p.type === "text")
+    .filter((p): p is LanguageModelV3TextPart => p.type === "text")
     .map((p) => p.text)
     .join("\n")
 }
 
-function output(result: LanguageModelV2ToolResultPart["output"]): string {
+function output(result: LanguageModelV3ToolResultPart["output"]): string {
   if (!result) return "(no output)"
   switch (result.type) {
     case "text":
@@ -43,6 +43,8 @@ function output(result: LanguageModelV2ToolResultPart["output"]): string {
     case "json":
     case "error-json":
       return JSON.stringify(result.value)
+    case "execution-denied":
+      return result.reason ?? "(execution denied)"
     case "content":
       return result.value
         .filter((v): v is { type: "text"; text: string } => v.type === "text")
@@ -52,7 +54,7 @@ function output(result: LanguageModelV2ToolResultPart["output"]): string {
 }
 
 function history(
-  prompt: LanguageModelV2Prompt,
+  prompt: LanguageModelV3Prompt,
   model: string,
 ): ReadonlyArray<KiroHistoryMessage> {
   const prefix = prompt
@@ -77,11 +79,11 @@ function history(
         case "assistant": {
           const content = text(
             msg.content.filter(
-              (p): p is LanguageModelV2TextPart => p.type === "text",
+              (p): p is LanguageModelV3TextPart => p.type === "text",
             ),
           )
           const calls = msg.content.filter(
-            (p): p is LanguageModelV2ToolCallPart => p.type === "tool-call",
+            (p): p is LanguageModelV3ToolCallPart => p.type === "tool-call",
           )
 
           const message: KiroAssistantResponseMessage = calls.length > 0
@@ -107,11 +109,13 @@ function history(
               modelId: model,
               origin: "AI_EDITOR",
               userInputMessageContext: {
-                toolResults: msg.content.map((r) => ({
-                  toolUseId: r.toolCallId,
-                  content: [{ text: output(r.output) }],
-                  status: (r.output?.type === "error-text" || r.output?.type === "error-json" ? "error" : "success") as "success" | "error",
-                })),
+                toolResults: msg.content
+                  .filter((r): r is LanguageModelV3ToolResultPart => r.type === "tool-result")
+                  .map((r) => ({
+                    toolUseId: r.toolCallId,
+                    content: [{ text: output(r.output) }],
+                    status: (r.output?.type === "error-text" || r.output?.type === "error-json" ? "error" : "success") as "success" | "error",
+                  })),
               },
             },
           }]
@@ -131,9 +135,9 @@ function history(
 }
 
 export function translate(input: {
-  readonly prompt: LanguageModelV2Prompt
+  readonly prompt: LanguageModelV3Prompt
   readonly modelId: string
-  readonly tools?: ReadonlyArray<LanguageModelV2FunctionTool>
+  readonly tools?: ReadonlyArray<LanguageModelV3FunctionTool>
   readonly conversationId?: string
 }): KiroConversationState {
   const system = input.prompt.filter((m) => m.role === "system")
@@ -146,13 +150,15 @@ export function translate(input: {
         .slice(rest.length - trailing)
         .filter((m): m is Extract<typeof m, { role: "tool" }> => m.role === "tool")
         .flatMap((m) =>
-          m.content.map(
-            (r): KiroToolResult => ({
-              toolUseId: r.toolCallId,
-              content: [{ text: output(r.output) }],
-              status: r.output?.type === "error-text" || r.output?.type === "error-json" ? "error" : "success",
-            }),
-          ),
+          m.content
+            .filter((r): r is LanguageModelV3ToolResultPart => r.type === "tool-result")
+            .map(
+              (r): KiroToolResult => ({
+                toolUseId: r.toolCallId,
+                content: [{ text: output(r.output) }],
+                status: r.output?.type === "error-text" || r.output?.type === "error-json" ? "error" : "success",
+              }),
+            ),
         )
     : []
 

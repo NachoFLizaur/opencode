@@ -46,6 +46,7 @@ import type {
   GlobalDisposeResponses,
   GlobalEventResponses,
   GlobalHealthResponses,
+  GlobalProviderQuotaResponses,
   GlobalSyncEventSubscribeResponses,
   GlobalUpgradeErrors,
   GlobalUpgradeResponses,
@@ -283,6 +284,20 @@ export class Config extends HeyApiClient {
   }
 }
 
+export class Provider extends HeyApiClient {
+  /**
+   * Get provider quota
+   *
+   * Get current usage quota for subscription-based providers.
+   */
+  public quota<ThrowOnError extends boolean = false>(options?: Options<never, ThrowOnError>) {
+    return (options?.client ?? this.client).get<GlobalProviderQuotaResponses, unknown, ThrowOnError>({
+      url: "/global/provider/quota",
+      ...options,
+    })
+  }
+}
+
 export class Global extends HeyApiClient {
   /**
    * Get health
@@ -352,6 +367,11 @@ export class Global extends HeyApiClient {
   private _config?: Config
   get config(): Config {
     return (this._config ??= new Config({ client: this.client }))
+  }
+
+  private _provider?: Provider
+  get provider(): Provider {
+    return (this._provider ??= new Provider({ client: this.client }))
   }
 }
 
@@ -2731,7 +2751,7 @@ export class Oauth extends HeyApiClient {
   }
 }
 
-export class Provider extends HeyApiClient {
+export class Provider2 extends HeyApiClient {
   /**
    * List providers
    *
@@ -4017,9 +4037,9 @@ export class OpencodeClient extends HeyApiClient {
     return (this._question ??= new Question({ client: this.client }))
   }
 
-  private _provider?: Provider
-  get provider(): Provider {
-    return (this._provider ??= new Provider({ client: this.client }))
+  private _provider?: Provider2
+  get provider(): Provider2 {
+    return (this._provider ??= new Provider2({ client: this.client }))
   }
 
   private _find?: Find

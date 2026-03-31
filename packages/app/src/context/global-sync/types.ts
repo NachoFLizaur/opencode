@@ -66,6 +66,7 @@ export type State = {
   lsp_ready: boolean
   lsp: LspStatus[]
   vcs: VcsInfo | undefined
+  provider_quota: { currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined
   limit: number
   message: {
     [sessionID: string]: Message[]

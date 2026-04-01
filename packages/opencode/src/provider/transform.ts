@@ -742,6 +742,9 @@ export namespace ProviderTransform {
           return Object.fromEntries(WIDELY_SUPPORTED_EFFORTS.map((effort) => [effort, { reasoningEffort: effort }]))
         }
         return {}
+
+      case "kiro":
+        return { on: { thinking: true } }
     }
     return {}
   }

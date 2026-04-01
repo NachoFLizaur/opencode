@@ -224,14 +224,7 @@ export class KiroLanguageModel implements LanguageModelV3 {
     })
 
     const ctx = translated.currentMessage.userInputMessage.userInputMessageContext
-    const prior = options.prompt.some(
-      (m) =>
-        m.role === "assistant" &&
-        m.content.some((p) => p.type === "tool-call"),
-    )
     const tools = ctx?.tools ?? []
-    const inject =
-      prior && tools.every((t) => t.toolSpecification.name !== "thinking")
     const state = {
       ...translated,
       currentMessage: {
@@ -239,7 +232,11 @@ export class KiroLanguageModel implements LanguageModelV3 {
           ...translated.currentMessage.userInputMessage,
           userInputMessageContext: {
             ...ctx,
-            tools: inject ? [...tools, THINKING_TOOL] : tools,
+            tools:
+              (options.providerOptions?.kiro as Record<string, unknown>)?.thinking === true &&
+              tools.every((t) => t.toolSpecification.name !== "thinking")
+                ? [...tools, THINKING_TOOL]
+                : tools,
           },
         },
       },

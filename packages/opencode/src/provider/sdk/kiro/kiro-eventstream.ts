@@ -143,7 +143,7 @@ export async function* decodeEventStream(
 ): AsyncGenerator<KiroStreamEvent> {
   for await (const frame of chunked(iterable(stream))) {
     const message = codec.decode(frame)
-    const parsed = interpret(message)
-    if (parsed) yield parsed
+    const event = interpret(message)
+    if (event) yield event
   }
 }

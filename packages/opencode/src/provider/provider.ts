@@ -142,7 +142,6 @@ export namespace Provider {
     "@ai-sdk/vercel": createVercel,
     "gitlab-ai-provider": createGitLab,
     "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
-    // @ts-ignore kiro provider only implements languageModel
     kiro: createKiro,
   }
 

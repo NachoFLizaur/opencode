@@ -45,7 +45,7 @@ export function getQuota(): Promise<
           usageLimit: item.usageLimitWithPrecision ?? item.usageLimit,
           subscriptionTitle: body.subscriptionInfo.subscriptionTitle
             .toLowerCase()
-            .replace(/\b\w/g, (c: string) => c.toUpperCase()),
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
         }
       })
       .catch(() => undefined)

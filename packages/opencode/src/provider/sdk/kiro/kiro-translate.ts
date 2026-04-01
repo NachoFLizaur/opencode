@@ -176,8 +176,7 @@ export function translate(input: {
     .map((m) => m.content)
     .join("\n")
 
-  const hasHistory = hist.length > 0
-  const current = !hasHistory && prefix
+  const current = hist.length === 0 && prefix
     ? prefix + "\n" + content
     : content
 

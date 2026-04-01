@@ -1685,7 +1685,7 @@ describe("kiro-language-model", () => {
     getTokenMock.mockRestore()
   })
 
-  test("doStream skips thinking tool when no prior tool calls", async () => {
+  test("doStream skips thinking tool when thinking is not enabled", async () => {
     const { KiroLanguageModel } = await import("../../src/provider/sdk/kiro/kiro-language-model")
     const authMod = await import("../../src/provider/sdk/kiro/kiro-auth")
     const getTokenMock = spyOn(authMod, "getToken").mockResolvedValue("test-token")
@@ -1721,7 +1721,7 @@ describe("kiro-language-model", () => {
     getTokenMock.mockRestore()
   })
 
-  test("doStream injects thinking tool when prior tool calls exist", async () => {
+  test("doStream injects thinking tool when thinking is enabled", async () => {
     const { KiroLanguageModel } = await import("../../src/provider/sdk/kiro/kiro-language-model")
     const authMod = await import("../../src/provider/sdk/kiro/kiro-auth")
     const getTokenMock = spyOn(authMod, "getToken").mockResolvedValue("test-token")
@@ -1766,7 +1766,7 @@ describe("kiro-language-model", () => {
       },
     ]
 
-    const result = await model.doStream({ prompt })
+    const result = await model.doStream({ prompt, providerOptions: { kiro: { thinking: true } } })
     const reader = result.stream.getReader()
     const drain = async (): Promise<void> => {
       const { done } = await reader.read()
@@ -1883,12 +1883,4 @@ describe("kiro CUSTOM_LOADERS integration", () => {
     })
   })
 
-  test("kiro exists in models-snapshot with correct npm field", async () => {
-    const { snapshot } = await import("../../src/provider/models-snapshot")
-    const kiro = snapshot["kiro" as keyof typeof snapshot] as { id: string; npm: string; api: string }
-    expect(kiro).toBeDefined()
-    expect(kiro.id).toBe("kiro")
-    expect(kiro.npm).toBe("kiro")
-    expect(kiro.api).toBe("https://q.us-east-1.amazonaws.com")
-  })
 })

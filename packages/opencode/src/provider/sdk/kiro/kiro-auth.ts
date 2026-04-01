@@ -70,7 +70,7 @@ function refresh(token: KiroTokenFile): Promise<KiroTokenFile | undefined> {
       })
       .then((body) => {
         if (!body) return undefined
-        const refreshed: KiroTokenFile = {
+        const next: KiroTokenFile = {
           accessToken: body.accessToken,
           refreshToken: body.refreshToken ?? token.refreshToken,
           expiresAt: new Date(Date.now() + body.expiresIn * 1000).toISOString(),
@@ -81,8 +81,8 @@ function refresh(token: KiroTokenFile): Promise<KiroTokenFile | undefined> {
           authMethod: token.authMethod,
           provider: token.provider,
         }
-        write(refreshed)
-        return refreshed
+        write(next)
+        return next
       })
       .catch(() => undefined)
   })

@@ -4,6 +4,7 @@ import { KiroLanguageModel } from "./kiro-language-model"
 export interface KiroProviderSettings {
   readonly fetch?: typeof globalThis.fetch
   readonly context?: number
+  readonly region?: string
 }
 
 export interface KiroProvider {
@@ -17,6 +18,7 @@ export function createKiro(settings: KiroProviderSettings = {}): KiroProvider {
       provider: "kiro",
       fetch: settings.fetch,
       context: settings.context,
+      region: settings.region,
     })
 
   provider.languageModel = provider

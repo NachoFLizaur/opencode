@@ -12,8 +12,6 @@ import { decodeEventStream } from "./kiro-eventstream"
 import { KiroAuthError, KiroApiError } from "./kiro-error"
 import type { KiroStreamEvent, KiroToolSpec } from "./kiro-api-types"
 
-const ENDPOINT = "https://q.us-east-1.amazonaws.com"
-
 const THINKING_TOOL: KiroToolSpec = {
   toolSpecification: {
     name: "thinking",
@@ -177,6 +175,7 @@ export class KiroLanguageModel implements LanguageModelV3 {
       readonly provider: string
       readonly fetch?: typeof globalThis.fetch
       readonly context?: number
+      readonly region?: string
     },
   ) {
     this.provider = config.provider
@@ -187,8 +186,9 @@ export class KiroLanguageModel implements LanguageModelV3 {
     token: string,
     state: ReturnType<typeof translate>,
   ): Promise<Response> {
+    const endpoint = `https://q.${this.config.region ?? "us-east-1"}.amazonaws.com`
     return (this.config.fetch ?? globalThis.fetch)(
-      `${ENDPOINT}/generateAssistantResponse`,
+      `${endpoint}/generateAssistantResponse`,
       {
         method: "POST",
         headers: {

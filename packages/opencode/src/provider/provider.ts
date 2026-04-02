@@ -54,7 +54,7 @@ import {
   isWorkflowModel,
   discoverWorkflowModels,
 } from "gitlab-ai-provider"
-import { hasToken } from "./sdk/kiro/kiro-auth"
+import { hasToken, getApiRegion } from "./sdk/kiro/kiro-auth"
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers"
 import { GoogleAuth } from "google-auth-library"
 import { ProviderTransform } from "./transform"
@@ -822,12 +822,13 @@ export namespace Provider {
         Effect.promise(async () => {
           const found = await hasToken()
           if (!found) return { autoload: false }
+          const apiRegion = await getApiRegion()
           return {
             autoload: true,
             async getModel(sdk: ReturnType<typeof createKiro>, modelID: string, options?: Record<string, any>) {
               const ctx = options?.["context"] as number | undefined
-              if (!ctx) return sdk.languageModel(modelID)
-              return createKiro({ context: ctx }).languageModel(modelID)
+              if (!ctx) return createKiro({ region: apiRegion }).languageModel(modelID)
+              return createKiro({ context: ctx, region: apiRegion }).languageModel(modelID)
             },
           }
         }),

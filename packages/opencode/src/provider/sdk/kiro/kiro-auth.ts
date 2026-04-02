@@ -114,3 +114,30 @@ export function getToken(): Promise<string | undefined> {
 export function hasToken(): Promise<boolean> {
   return Bun.file(TOKEN_PATH).exists()
 }
+
+const region: { api: string } = { api: "" }
+
+export function getApiRegion(): Promise<string> {
+  if (region.api) return Promise.resolve(region.api)
+  return getToken()
+    .then((token) => {
+      if (!token) return "us-east-1"
+      return fetch("https://q.us-east-1.amazonaws.com/ListAvailableModels?origin=AI_EDITOR", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "User-Agent": "aws-sdk-js/1.0.27 ua/2.1 os/darwin lang/js api/codewhispererstreaming#1.0.27 m/E Kiro-opencode",
+          "x-amz-user-agent": "aws-sdk-js/1.0.27 Kiro-opencode",
+          "x-amzn-codewhisperer-optout": "true",
+        },
+      })
+        .then((r) => (r.ok ? "us-east-1" : "eu-central-1"))
+        .catch(() => "eu-central-1")
+    })
+    .catch(() => "us-east-1")
+    .then((result) => {
+      region.api = result
+      return result
+    })
+}

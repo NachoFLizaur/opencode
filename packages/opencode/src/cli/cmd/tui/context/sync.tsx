@@ -76,8 +76,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       }
       formatter: FormatterStatus[]
       provider_quota: { currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined
-      workspaceList: Workspace[]
->>>>>>> e8a66443d (feat(opencode): add Kiro subscription quota display to TUI)
       vcs: VcsInfo | undefined
     }>({
       provider_next: {
@@ -106,6 +104,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       mcp_resource: {},
       formatter: [],
       provider_quota: undefined,
+      vcs: undefined,
     })
 
     const event = useEvent()
@@ -438,6 +437,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.vcs.get({ workspace }).then((x) => setStore("vcs", reconcile(x.data))),
             project.workspace.sync(),
             getQuota().then((x) => x && setStore("provider_quota", x)),
+          ]).then(() => {
             setStore("status", "complete")
           })
         })

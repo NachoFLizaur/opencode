@@ -158,7 +158,7 @@ export function Prompt(props: PromptProps) {
 
     return {
       context: pct ? `${Locale.number(tokens)} (${pct})` : Locale.number(tokens),
-      cost: sync.data.provider_quota
+      cost: sync.data.provider_quota && last.providerID === "kiro"
         ? `${sync.data.provider_quota.subscriptionTitle}: ${sync.data.provider_quota.currentUsage.toLocaleString()}/${sync.data.provider_quota.usageLimit.toLocaleString()} credits`
         : cost > 0
           ? money.format(cost)

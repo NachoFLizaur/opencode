@@ -17,9 +17,13 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const [quota, setQuota] = createSignal<{ currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined>()
   getQuota().then((x) => x && setQuota(x))
 
+  const last = createMemo(() =>
+    msg().findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0),
+  )
+
   const state = createMemo(() => {
-    const last = msg().findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0)
-    if (!last) {
+    const l = last()
+    if (!l) {
       return {
         tokens: 0,
         percent: null,
@@ -27,8 +31,8 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     }
 
     const tokens =
-      last.tokens.input + last.tokens.output + last.tokens.reasoning + last.tokens.cache.read + last.tokens.cache.write
-    const model = props.api.state.provider.find((item) => item.id === last.providerID)?.models[last.modelID]
+      l.tokens.input + l.tokens.output + l.tokens.reasoning + l.tokens.cache.read + l.tokens.cache.write
+    const model = props.api.state.provider.find((item) => item.id === l.providerID)?.models[l.modelID]
     return {
       tokens,
       percent: model?.limit.context ? Math.round((tokens / model.limit.context) * 100) : null,
@@ -43,7 +47,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
       <text fg={theme().textMuted}>{state().tokens.toLocaleString()} tokens</text>
       <text fg={theme().textMuted}>{state().percent ?? 0}% used</text>
       <text fg={theme().textMuted}>
-        {quota()
+        {quota() && last()?.providerID === "kiro"
           ? `${quota()!.subscriptionTitle}: ${quota()!.currentUsage.toLocaleString()}/${quota()!.usageLimit.toLocaleString()} credits`
           : money.format(cost())}{" "}
         spent

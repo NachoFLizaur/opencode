@@ -4,7 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises"
 import path from "path"
 import os from "os"
 
-const OIDC_ENDPOINT = "https://oidc.us-east-1.amazonaws.com"
+const DEFAULT_REGION = "us-east-1"
 const BUILDER_ID_URL = "https://view.awsapps.com/start"
 const SCOPES = [
   "codewhisperer:completions",
@@ -21,6 +21,20 @@ const CLIENT_PATH = path.join(os.homedir(), ".aws", "sso", "cache", "kiro-client
 const USER_AGENT = "aws-sdk-js/1.0.27 ua/2.1 os/darwin lang/js api/codewhispererstreaming#1.0.27 m/E Kiro-opencode"
 const USER_AGENT_SHORT = "aws-sdk-js/1.0.27 Kiro-opencode"
 
+function start(inputs: Record<string, string>) {
+  return inputs.authType === "idc" ? inputs.startUrl : BUILDER_ID_URL
+}
+
+function region(inputs: Record<string, string>) {
+  if (inputs.authType !== "idc") return DEFAULT_REGION
+  if (inputs.region === "custom") return inputs.regionCustom?.trim() || DEFAULT_REGION
+  return inputs.region || DEFAULT_REGION
+}
+
+function oidc(region: string) {
+  return `https://oidc.${region}.amazonaws.com`
+}
+
 function read<T>(filepath: string): Promise<T | undefined> {
   const file = Bun.file(filepath)
   return file
@@ -36,9 +50,7 @@ function write(filepath: string, data: unknown): Promise<void> {
 }
 
 function mkdir(dir: string): Promise<void> {
-  return import("fs/promises")
-    .then((fs) => fs.mkdir(dir, { recursive: true }).then(() => {}))
-    .catch(() => {})
+  return import("fs/promises").then((fs) => fs.mkdir(dir, { recursive: true }).then(() => {})).catch(() => {})
 }
 
 export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
@@ -90,12 +102,35 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
               placeholder: "https://d-xxxxxxxxxx.awsapps.com/start",
               when: { key: "authType", op: "eq" as const, value: "idc" },
             },
+            {
+              type: "select" as const,
+              key: "region",
+              message: "Select your IAM Identity Center region",
+              options: [
+                { label: "ap-northeast-1", value: "ap-northeast-1", hint: "Tokyo" },
+                { label: "us-east-1", value: "us-east-1", hint: "N. Virginia" },
+                { label: "eu-central-1", value: "eu-central-1", hint: "Frankfurt" },
+                { label: "custom", value: "custom", hint: "Enter manually" },
+              ],
+              when: { key: "authType", op: "eq" as const, value: "idc" },
+            },
+            {
+              type: "text" as const,
+              key: "regionCustom",
+              message: "Enter your IAM Identity Center region",
+              placeholder: "ap-northeast-1",
+              validate(value) {
+                return value.trim() ? undefined : "Region is required"
+              },
+              when: { key: "region", op: "eq" as const, value: "custom" },
+            },
           ],
           async authorize(inputs = {} as Record<string, string>) {
-            const url =
-              inputs.authType === "idc" ? inputs.startUrl : BUILDER_ID_URL
+            const url = start(inputs)
+            const reg = region(inputs)
+            const root = oidc(reg)
 
-            const registration = await fetch(`${OIDC_ENDPOINT}/client/register`, {
+            const registration = await fetch(`${root}/client/register`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -121,7 +156,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
               clientSecretExpiresAt: number
             }
 
-            const device = await fetch(`${OIDC_ENDPOINT}/device_authorization`, {
+            const device = await fetch(`${root}/device_authorization`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -155,7 +190,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
                 const delay = { ms: auth.interval }
 
                 while (true) {
-                  const response = await fetch(`${OIDC_ENDPOINT}/token`, {
+                  const response = await fetch(`${root}/token`, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
@@ -185,7 +220,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
                       accessToken: tokens.accessToken,
                       refreshToken: tokens.refreshToken,
                       expiresAt: expires.toISOString(),
-                      region: "us-east-1",
+                      region: reg,
                       clientId: client.clientId,
                       clientSecret: client.clientSecret,
                     })

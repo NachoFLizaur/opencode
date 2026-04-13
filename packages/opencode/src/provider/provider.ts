@@ -35,7 +35,7 @@ import { createOpenAI } from "@ai-sdk/openai"
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
 import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
-import { createKiro } from "./sdk/kiro"
+import { createKiro, hasToken, getApiRegion } from "kiro-ai-provider"
 import { createXai } from "@ai-sdk/xai"
 import { createMistral } from "@ai-sdk/mistral"
 import { createGroq } from "@ai-sdk/groq"
@@ -54,7 +54,6 @@ import {
   isWorkflowModel,
   discoverWorkflowModels,
 } from "gitlab-ai-provider"
-import { hasToken, getApiRegion } from "./sdk/kiro/kiro-auth"
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers"
 import { GoogleAuth } from "google-auth-library"
 import { ProviderTransform } from "./transform"

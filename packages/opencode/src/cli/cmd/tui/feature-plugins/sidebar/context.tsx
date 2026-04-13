@@ -1,7 +1,7 @@
 import type { AssistantMessage } from "@opencode-ai/sdk/v2"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { createMemo, createSignal } from "solid-js"
-import { getQuota } from "@/provider/sdk/kiro/kiro-quota"
+import { getQuota } from "kiro-ai-provider"
 
 const id = "internal:sidebar-context"
 

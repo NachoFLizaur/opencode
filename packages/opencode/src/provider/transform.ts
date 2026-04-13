@@ -38,6 +38,8 @@ export namespace ProviderTransform {
         return "vertex"
       case "@ai-sdk/google":
         return "google"
+      case "kiro-ai-provider":
+        return "kiro"
       case "@ai-sdk/gateway":
         return "gateway"
       case "@openrouter/ai-sdk-provider":
@@ -743,7 +745,7 @@ export namespace ProviderTransform {
         }
         return {}
 
-      case "kiro":
+      case "kiro-ai-provider":
         return { on: { thinking: true } }
     }
     return {}

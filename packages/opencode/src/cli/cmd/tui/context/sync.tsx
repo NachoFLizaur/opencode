@@ -29,7 +29,7 @@ import { useExit } from "./exit"
 import { useArgs } from "./args"
 import { batch, createEffect, on } from "solid-js"
 import { Log } from "@/util/log"
-import { getQuota } from "@/provider/sdk/kiro/kiro-quota"
+import { getQuota } from "kiro-ai-provider"
 import { ConsoleState, emptyConsoleState, type ConsoleState as ConsoleStateType } from "@/config/console-state"
 
 export const { use: useSync, provider: SyncProvider } = createSimpleContext({

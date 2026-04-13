@@ -51,11 +51,7 @@ import type {
   GlobalDisposeResponses,
   GlobalEventResponses,
   GlobalHealthResponses,
-<<<<<<< HEAD
-=======
   GlobalProviderQuotaResponses,
-  GlobalSyncEventSubscribeResponses,
->>>>>>> 9c862cb79 (feat(opencode): add Kiro subscription quota display to WebUI)
   GlobalUpgradeErrors,
   GlobalUpgradeResponses,
   InstanceDisposeResponses,

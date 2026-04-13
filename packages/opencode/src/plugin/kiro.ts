@@ -1,45 +1,9 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin"
-import { Installation } from "@/installation"
-import { setTimeout as sleep } from "node:timers/promises"
-import path from "path"
-import os from "os"
+import { authenticate, getToken } from "kiro-ai-provider"
 
-const oidc = (region: string) => `https://oidc.${region}.amazonaws.com`
 const BUILDER_ID_URL = "https://view.awsapps.com/start"
-const SCOPES = [
-  "codewhisperer:completions",
-  "codewhisperer:analysis",
-  "codewhisperer:conversations",
-  "codewhisperer:transformations",
-  "codewhisperer:taskassist",
-]
-const GRANT_TYPES = ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"]
-const DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
-const POLLING_MARGIN_MS = 3000
-const TOKEN_PATH = path.join(os.homedir(), ".aws", "sso", "cache", "kiro-auth-token.json")
-const CLIENT_PATH = path.join(os.homedir(), ".aws", "sso", "cache", "kiro-client-registration.json")
 const USER_AGENT = "aws-sdk-js/1.0.27 ua/2.1 os/darwin lang/js api/codewhispererstreaming#1.0.27 m/E Kiro-opencode"
 const USER_AGENT_SHORT = "aws-sdk-js/1.0.27 Kiro-opencode"
-
-function read<T>(filepath: string): Promise<T | undefined> {
-  const file = Bun.file(filepath)
-  return file
-    .exists()
-    .then((found) => (found ? file.text().then((text) => JSON.parse(text) as T) : undefined))
-    .catch(() => undefined)
-}
-
-function write(filepath: string, data: unknown): Promise<void> {
-  return Bun.write(filepath, JSON.stringify(data, null, 2))
-    .then(() => {})
-    .catch(() => {})
-}
-
-function mkdir(dir: string): Promise<void> {
-  return import("fs/promises")
-    .then((fs) => fs.mkdir(dir, { recursive: true }).then(() => {}))
-    .catch(() => {})
-}
 
 export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
   return {
@@ -51,20 +15,18 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
 
         return {
           async fetch(request: RequestInfo | URL, init?: RequestInit) {
-            const token = await read<{ accessToken: string }>(TOKEN_PATH)
+            const token = await getToken()
             if (!token) return fetch(request, init)
-
-            const headers: Record<string, string> = {
-              ...(init?.headers as Record<string, string>),
-              Authorization: `Bearer ${token.accessToken}`,
-              "User-Agent": USER_AGENT,
-              "x-amz-user-agent": USER_AGENT_SHORT,
-              "x-amzn-codewhisperer-optout": "true",
-            }
 
             return fetch(request, {
               ...init,
-              headers,
+              headers: {
+                ...(init?.headers as Record<string, string>),
+                Authorization: `Bearer ${token}`,
+                "User-Agent": USER_AGENT,
+                "x-amz-user-agent": USER_AGENT_SHORT,
+                "x-amzn-codewhisperer-optout": "true",
+              },
             })
           },
         }
@@ -106,138 +68,29 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
                 ? (inputs.region || process.env.AWS_SSO_REGION || "us-east-1")
                 : "us-east-1"
 
-            const registration = await fetch(`${oidc(region)}/client/register`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "User-Agent": `opencode/${Installation.VERSION}`,
-              },
-              body: JSON.stringify({
-                clientName: "opencode-kiro",
-                clientType: "public",
-                scopes: SCOPES,
-                grantTypes: GRANT_TYPES,
-                issuerUrl: url,
-              }),
+            const { promise: pending, resolve } = Promise.withResolvers<{ url: string; code: string }>()
+
+            const auth = authenticate({
+              startUrl: url,
+              region,
+              onVerification: (verify, code) => resolve({ url: verify, code }),
             })
 
-            if (!registration.ok) {
-              throw new Error("Failed to register OIDC client")
-            }
-
-            const client = (await registration.json()) as {
-              clientId: string
-              clientSecret: string
-              clientIdIssuedAt: number
-              clientSecretExpiresAt: number
-            }
-
-            const device = await fetch(`${oidc(region)}/device_authorization`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "User-Agent": `opencode/${Installation.VERSION}`,
-              },
-              body: JSON.stringify({
-                clientId: client.clientId,
-                clientSecret: client.clientSecret,
-                startUrl: url,
-              }),
-            })
-
-            if (!device.ok) {
-              throw new Error("Failed to start device authorization")
-            }
-
-            const auth = (await device.json()) as {
-              verificationUri: string
-              verificationUriComplete: string
-              userCode: string
-              deviceCode: string
-              interval: number
-              expiresIn: number
-            }
+            const verification = await pending
 
             return {
-              url: auth.verificationUriComplete,
-              instructions: `Enter code: ${auth.userCode}`,
+              url: verification.url,
+              instructions: verification.code,
               method: "auto" as const,
-              async callback() {
-                const delay = { ms: auth.interval }
-
-                while (true) {
-                  const response = await fetch(`${oidc(region)}/token`, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "User-Agent": `opencode/${Installation.VERSION}`,
-                    },
-                    body: JSON.stringify({
-                      clientId: client.clientId,
-                      clientSecret: client.clientSecret,
-                      grantType: DEVICE_GRANT,
-                      deviceCode: auth.deviceCode,
-                    }),
-                  })
-
-                  if (response.ok) {
-                    const tokens = (await response.json()) as {
-                      accessToken: string
-                      refreshToken: string
-                      expiresIn: number
-                      tokenType: string
-                    }
-
-                    const expires = new Date(Date.now() + tokens.expiresIn * 1000)
-
-                    await mkdir(path.dirname(TOKEN_PATH))
-
-                    await write(TOKEN_PATH, {
-                      accessToken: tokens.accessToken,
-                      refreshToken: tokens.refreshToken,
-                      expiresAt: expires.toISOString(),
-                      region,
-                      clientId: client.clientId,
-                      clientSecret: client.clientSecret,
-                    })
-
-                    await write(CLIENT_PATH, {
-                      clientId: client.clientId,
-                      clientSecret: client.clientSecret,
-                      clientIdIssuedAt: client.clientIdIssuedAt,
-                      clientSecretExpiresAt: client.clientSecretExpiresAt,
-                    })
-
-                    return {
-                      type: "success" as const,
-                      refresh: tokens.refreshToken,
-                      access: tokens.accessToken,
-                      expires: expires.getTime(),
-                    }
-                  }
-
-                  const error = (await response.json().catch(() => ({}))) as {
-                    error?: string
-                    error_description?: string
-                  }
-
-                  if (error.error === "authorization_pending") {
-                    await sleep(delay.ms * 1000 + POLLING_MARGIN_MS)
-                    continue
-                  }
-
-                  if (error.error === "slow_down") {
-                    delay.ms = delay.ms + 5
-                    await sleep(delay.ms * 1000 + POLLING_MARGIN_MS)
-                    continue
-                  }
-
-                  if (error.error) return { type: "failed" as const }
-
-                  await sleep(delay.ms * 1000 + POLLING_MARGIN_MS)
-                  continue
-                }
-              },
+              callback: () =>
+                auth
+                  .then((result) => ({
+                    type: "success" as const,
+                    refresh: result.refreshToken,
+                    access: result.accessToken,
+                    expires: Date.now() + 3600000,
+                  }))
+                  .catch(() => ({ type: "failed" as const })),
             }
           },
         },

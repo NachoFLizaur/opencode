@@ -309,7 +309,7 @@ export const GlobalRoutes = lazy(() =>
         },
       }),
       async (c) => {
-        const { getQuota } = await import("../../provider/sdk/kiro/kiro-quota")
+        const { getQuota } = await import("kiro-ai-provider")
         return c.json((await getQuota()) ?? null)
       },
     ),

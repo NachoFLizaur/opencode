@@ -387,7 +387,7 @@
         "hono-openapi": "catalog:",
         "ignore": "7.0.5",
         "jsonc-parser": "3.3.1",
-        "kiro-ai-provider": "0.2.2",
+        "kiro-ai-provider": "0.4.4",
         "mime-types": "3.0.2",
         "minimatch": "10.0.3",
         "npm-package-arg": "13.0.2",
@@ -3553,7 +3553,7 @@
 
     "kind-of": ["kind-of@6.0.3", "", {}, "sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw=="],
 
-    "kiro-ai-provider": ["kiro-ai-provider@0.2.2", "", { "dependencies": { "@smithy/eventstream-codec": "^4.0.3", "@smithy/types": "^4.3.1" }, "peerDependencies": { "@ai-sdk/provider": ">=3.0.0" } }, "sha512-cEfQJ5IhabcCuZX7b8uq+kmXkHqyxVezFChAwsqdv3Wz8hkHI4PFg4O9q+++i+D1w12KvCRFeTnTdqu6hqZbdA=="],
+    "kiro-ai-provider": ["kiro-ai-provider@0.4.4", "", { "dependencies": { "@smithy/eventstream-codec": "^4.0.3", "@smithy/types": "^4.3.1" }, "peerDependencies": { "@ai-sdk/provider": ">=3.0.0" } }, "sha512-OfyKlUpsoreF2rpgGX7E4m6ldydGNFWIHDA7JNm4ZdsCHlf1ZapRnAPIPhcvf8wCBI/DxCF+crYPcgHH/tmt3g=="],
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 

@@ -15,7 +15,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
 
         return {
           async fetch(request: RequestInfo | URL, init?: RequestInit) {
-            const token = await getToken()
+            const token = info.access || (await getToken())
             if (!token) return fetch(request, init)
 
             return fetch(request, {
@@ -23,6 +23,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
               headers: {
                 ...(init?.headers as Record<string, string>),
                 Authorization: `Bearer ${token}`,
+                ...(token.startsWith("ksk_") ? { tokentype: "API_KEY" } : {}),
                 "User-Agent": USER_AGENT,
                 "x-amz-user-agent": USER_AGENT_SHORT,
                 "x-amzn-codewhisperer-optout": "true",
@@ -43,6 +44,7 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
               options: [
                 { label: "AWS Builder ID", value: "builder-id", hint: "Free" },
                 { label: "IAM Identity Center", value: "idc", hint: "Enterprise" },
+                { label: "API Key", value: "apikey", hint: "Pro, Pro+, Power" },
               ],
             },
             {
@@ -59,8 +61,33 @@ export async function KiroAuthPlugin(_input: PluginInput): Promise<Hooks> {
               placeholder: "us-east-1",
               when: { key: "authType", op: "eq" as const, value: "idc" },
             },
+            {
+              type: "text" as const,
+              key: "apiKey",
+              message: "Enter your Kiro API key",
+              placeholder: "ksk-...",
+              when: { key: "authType", op: "eq" as const, value: "apikey" },
+            },
           ],
           async authorize(inputs = {} as Record<string, string>) {
+            if (inputs.authType === "apikey") {
+              const key = inputs.apiKey
+              return {
+                url: "",
+                instructions: "API key saved",
+                method: "auto" as const,
+                callback: async () => {
+                  if (!key) return { type: "failed" as const }
+                  return {
+                    type: "success" as const,
+                    refresh: "",
+                    access: key,
+                    expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
+                  }
+                },
+              }
+            }
+
             const url =
               inputs.authType === "idc" ? (inputs.startUrl || process.env.AWS_SSO_START_URL) : BUILDER_ID_URL
             const region =

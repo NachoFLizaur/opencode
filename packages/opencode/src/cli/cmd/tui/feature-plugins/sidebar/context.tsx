@@ -1,7 +1,6 @@
 import type { AssistantMessage } from "@opencode-ai/sdk/v2"
 import type { TuiPlugin, TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
 import { createMemo, createSignal } from "solid-js"
-import { getQuota } from "kiro-ai-provider"
 
 const id = "internal:sidebar-context"
 
@@ -15,7 +14,10 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const msg = createMemo(() => props.api.state.session.messages(props.session_id))
   const cost = createMemo(() => msg().reduce((sum, item) => sum + (item.role === "assistant" ? item.cost : 0), 0))
   const [quota, setQuota] = createSignal<{ currentUsage: number; usageLimit: number; subscriptionTitle: string } | undefined>()
-  getQuota().then((x) => x && setQuota(x))
+  props.api.client.global.provider
+    .quota()
+    .then((x) => x.data && setQuota(x.data))
+    .catch(() => {})
 
   const last = createMemo(() =>
     msg().findLast((item): item is AssistantMessage => item.role === "assistant" && item.tokens.output > 0),

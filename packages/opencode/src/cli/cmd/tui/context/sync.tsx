@@ -29,7 +29,6 @@ import { useExit } from "./exit"
 import { useArgs } from "./args"
 import { batch, createEffect, on } from "solid-js"
 import { Log } from "@/util/log"
-import { getQuota } from "kiro-ai-provider"
 import { ConsoleState, emptyConsoleState, type ConsoleState as ConsoleStateType } from "@/config/console-state"
 
 export const { use: useSync, provider: SyncProvider } = createSimpleContext({
@@ -229,7 +228,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         case "session.status": {
           setStore("session_status", event.properties.sessionID, event.properties.status)
           if (event.properties.status.type === "idle")
-            getQuota().then((x) => x && setStore("provider_quota", x))
+            sdk.client.global.provider
+              .quota()
+              .then((x) => x.data && setStore("provider_quota", x.data))
+              .catch(() => {})
           break
         }
 
@@ -436,7 +438,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             sdk.client.provider.auth({ workspace }).then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
             sdk.client.vcs.get({ workspace }).then((x) => setStore("vcs", reconcile(x.data))),
             project.workspace.sync(),
-            getQuota().then((x) => x && setStore("provider_quota", x)),
+            sdk.client.global.provider
+              .quota()
+              .then((x) => x.data && setStore("provider_quota", x.data))
+              .catch(() => {}),
           ]).then(() => {
             setStore("status", "complete")
           })

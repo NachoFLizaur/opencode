@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono"
+import { Auth } from "@/auth"
 import { describeRoute, resolver, validator } from "hono-openapi"
 import { streamSSE } from "hono/streaming"
 import { Effect } from "effect"
@@ -310,7 +311,9 @@ export const GlobalRoutes = lazy(() =>
       }),
       async (c) => {
         const { getQuota } = await import("kiro-ai-provider")
-        return c.json((await getQuota()) ?? null)
+        const info = await AppRuntime.runPromise(Auth.Service.use((svc) => svc.get("kiro")))
+        const token = info?.type === "oauth" ? (info as any).access : undefined
+        return c.json((await getQuota(token)) ?? null)
       },
     ),
 )

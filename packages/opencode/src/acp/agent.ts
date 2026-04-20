@@ -52,6 +52,8 @@ import type { AssistantMessage, Event, OpencodeClient, SessionMessageResponse, T
 import { applyPatch } from "diff"
 import { InstallationVersion } from "@/installation/version"
 
+const CREDIT_PROVIDERS = new Set(["kiro"])
+
 type ModeOption = { id: string; name: string; description?: string }
 type ModelOption = { modelId: string; name: string }
 
@@ -120,7 +122,7 @@ async function sendUsageUpdate(
         sessionUpdate: "usage_update",
         used,
         size,
-        cost: { amount: totalCost, currency: "USD" },
+        cost: { amount: totalCost, currency: CREDIT_PROVIDERS.has(msg.providerID) ? "credits" : "USD" },
       },
     })
     .catch((error) => {

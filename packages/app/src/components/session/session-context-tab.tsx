@@ -17,6 +17,7 @@ import { useSessionLayout } from "@/pages/session/session-layout"
 import { getSessionContextMetrics } from "./session-context-metrics"
 import { estimateSessionContextBreakdown, type SessionContextBreakdownKey } from "./session-context-breakdown"
 import { createSessionContextFormatter } from "./session-context-format"
+import { formatCost } from "@/utils/format-cost"
 
 const BREAKDOWN_COLOR: Record<SessionContextBreakdownKey, string> = {
   system: "var(--syntax-info)",
@@ -124,20 +125,12 @@ export function SessionContextTab() {
     { equals: same },
   )
 
-  const usd = createMemo(
-    () =>
-      new Intl.NumberFormat(language.intl(), {
-        style: "currency",
-        currency: "USD",
-      }),
-  )
-
   const metrics = createMemo(() => getSessionContextMetrics(messages(), providers.all()))
   const ctx = createMemo(() => metrics().context)
   const formatter = createMemo(() => createSessionContextFormatter(language.intl()))
 
   const cost = createMemo(() => {
-    return usd().format(metrics().totalCost)
+    return formatCost(metrics().totalCost, metrics().context?.message.providerID)
   })
 
   const counts = createMemo(() => {

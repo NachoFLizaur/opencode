@@ -8,6 +8,7 @@ import { useCommandDialog } from "@tui/component/dialog-command"
 import { useKeybind } from "../../context/keybind"
 import { Locale } from "@/util"
 import { useTerminalDimensions } from "@opentui/solid"
+import { formatCost } from "@/provider/format-cost"
 
 export function SubagentFooter() {
   const route = useRouteData("session")
@@ -44,14 +45,9 @@ export function SubagentFooter() {
     const pct = model?.limit.context ? `${Math.round((tokens / model.limit.context) * 100)}%` : undefined
     const cost = msg.reduce((sum, item) => sum + (item.role === "assistant" ? item.cost : 0), 0)
 
-    const money = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    })
-
     return {
       context: pct ? `${Locale.number(tokens)} (${pct})` : Locale.number(tokens),
-      cost: cost > 0 ? money.format(cost) : undefined,
+      cost: cost > 0 ? formatCost(cost, last.providerID) : undefined,
     }
   })
 

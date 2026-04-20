@@ -257,6 +257,7 @@ export default function Share(props: {
       completed: undefined as number | undefined,
       messages: [] as MessageWithParts[],
       models: {} as Record<string, string[]>,
+      providerID: undefined as string | undefined,
       cost: 0,
       tokens: {
         input: 0,
@@ -282,6 +283,7 @@ export default function Share(props: {
         result.tokens.reasoning += msg.tokens.reasoning
 
         result.models[`${msg.providerID} ${msg.modelID}`] = [msg.providerID, msg.modelID]
+        result.providerID = msg.providerID
 
         if (msg.path.root) {
           result.rootDir = msg.path.root
@@ -396,7 +398,7 @@ export default function Share(props: {
                       <li>
                         <span data-element-label>{props.messages.cost}</span>
                         {data().cost !== undefined ? (
-                          <span>{formatCurrency(data().cost, props.messages.locale)}</span>
+                          <span>{formatCurrency(data().cost, props.messages.locale, data().providerID)}</span>
                         ) : (
                           <span data-placeholder>&mdash;</span>
                         )}

@@ -11,6 +11,7 @@ import { useProviders } from "@/hooks/use-providers"
 import { getSessionContextMetrics } from "@/components/session/session-context-metrics"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { createSessionTabs } from "@/pages/session/helpers"
+import { formatCost } from "@/utils/format-cost"
 
 interface SessionContextUsageProps {
   variant?: "button" | "indicator"
@@ -44,18 +45,10 @@ export function SessionContextUsage(props: SessionContextUsageProps) {
   })
   const messages = createMemo(() => (params.id ? (sync.data.message[params.id] ?? []) : []))
 
-  const usd = createMemo(
-    () =>
-      new Intl.NumberFormat(language.intl(), {
-        style: "currency",
-        currency: "USD",
-      }),
-  )
-
   const metrics = createMemo(() => getSessionContextMetrics(messages(), providers.all()))
   const context = createMemo(() => metrics().context)
   const cost = createMemo(() => {
-    return usd().format(metrics().totalCost)
+    return formatCost(metrics().totalCost, metrics().context?.message.providerID)
   })
 
   const openContext = () => {

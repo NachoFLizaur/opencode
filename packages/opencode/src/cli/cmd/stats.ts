@@ -7,6 +7,7 @@ import { SessionTable } from "../../session/session.sql"
 import { Project } from "../../project"
 import { Instance } from "../../project/instance"
 import { AppRuntime } from "@/effect/app-runtime"
+import { formatCost } from "@/provider/format-cost"
 
 interface SessionStats {
   totalSessions: number
@@ -336,8 +337,8 @@ export function displayStats(stats: SessionStats, toolLimit?: number, modelLimit
   const cost = isNaN(stats.totalCost) ? 0 : stats.totalCost
   const costPerDay = isNaN(stats.costPerDay) ? 0 : stats.costPerDay
   const tokensPerSession = isNaN(stats.tokensPerSession) ? 0 : stats.tokensPerSession
-  console.log(renderRow("Total Cost", `$${cost.toFixed(2)}`))
-  console.log(renderRow("Avg Cost/Day", `$${costPerDay.toFixed(2)}`))
+  console.log(renderRow("Total Cost", formatCost(cost)))
+  console.log(renderRow("Avg Cost/Day", formatCost(costPerDay)))
   console.log(renderRow("Avg Tokens/Session", formatNumber(Math.round(tokensPerSession))))
   const medianTokensPerSession = isNaN(stats.medianTokensPerSession) ? 0 : stats.medianTokensPerSession
   console.log(renderRow("Median Tokens/Session", formatNumber(Math.round(medianTokensPerSession))))
@@ -364,7 +365,7 @@ export function displayStats(stats: SessionStats, toolLimit?: number, modelLimit
       console.log(renderRow("  Output Tokens", formatNumber(usage.tokens.output)))
       console.log(renderRow("  Cache Read", formatNumber(usage.tokens.cache.read)))
       console.log(renderRow("  Cache Write", formatNumber(usage.tokens.cache.write)))
-      console.log(renderRow("  Cost", `$${usage.cost.toFixed(4)}`))
+      console.log(renderRow("  Cost", formatCost(usage.cost, model.split("/")[0])))
       console.log("├────────────────────────────────────────────────────────┤")
     }
     // Remove last separator and add bottom border

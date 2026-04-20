@@ -27,8 +27,13 @@ export function formatNumber(value: number, locale: string) {
   return new Intl.NumberFormat(normalizeLocale(locale)).format(value)
 }
 
-export function formatCurrency(value: number, locale: string) {
-  return new Intl.NumberFormat(normalizeLocale(locale), {
+const CREDIT_PROVIDERS = new Set(["kiro"])
+
+export function formatCurrency(value: number, locale: string, providerID?: string) {
+  const normalized = normalizeLocale(locale)
+  if (providerID && CREDIT_PROVIDERS.has(providerID))
+    return `${new Intl.NumberFormat(normalized, { maximumFractionDigits: 2 }).format(value)} credits`
+  return new Intl.NumberFormat(normalized, {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 2,

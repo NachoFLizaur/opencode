@@ -304,6 +304,11 @@ export const getUsage = (input: { model: Provider.Model; usage: LanguageModelUsa
     },
   }
 
+  // Kiro ACP provider reports credits directly via providerMetadata
+  const credits = input.metadata?.["kiro"]?.["credits"]
+  if (typeof credits === "number" && credits > 0)
+    return { cost: credits, tokens }
+
   const costInfo =
     input.model.cost?.experimentalOver200K && tokens.input + tokens.cache.read > 200_000
       ? input.model.cost.experimentalOver200K

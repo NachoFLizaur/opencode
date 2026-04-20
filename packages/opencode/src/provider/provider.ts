@@ -22,6 +22,7 @@ import path from "path"
 import { Effect, Layer, Context, Schema, Types } from "effect"
 import { EffectBridge } from "@/effect"
 import { InstanceState } from "@/effect"
+import { Instance } from "../project/instance"
 import { AppFileSystem } from "@opencode-ai/shared/filesystem"
 import { isRecord } from "@/util/record"
 import { withStatics } from "@/util/schema"
@@ -114,6 +115,7 @@ const BUNDLED_PROVIDERS: Record<string, () => Promise<(opts: any) => BundledSDK>
   "gitlab-ai-provider": () => import("gitlab-ai-provider").then((m) => m.createGitLab),
   "@ai-sdk/github-copilot": () => import("./sdk/copilot").then((m) => m.createOpenaiCompatible),
   "venice-ai-sdk-provider": () => import("venice-ai-sdk-provider").then((m) => m.createVenice),
+  "kiro-acp-ai-provider": () => import("kiro-acp-ai-provider").then((m) => m.createKiroAcp),
 }
 
 type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -812,6 +814,70 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
             "X-Title": "opencode",
           },
         },
+      }),
+    kiro: (info) =>
+      Effect.promise(async () => {
+        const { verifyAuth, createKiroAcp } = await import("kiro-acp-ai-provider")
+        const status = verifyAuth()
+        if (!status.installed || !status.authenticated) return { autoload: false }
+
+        let sdk: any = null
+        const prompts = new Map<string, string[]>()
+
+        function diverged(prev: string[], msgs: string[]): boolean {
+          if (msgs.length < prev.length) return true
+          for (let i = 0; i < prev.length; i++) {
+            if (prev[i] !== msgs[i]) return true
+          }
+          return false
+        }
+
+        function intercept(options: any): any {
+          const affinity = options.headers?.["x-session-affinity"]
+          if (typeof affinity !== "string") return options
+          const tools = options.tools ?? options.mode?.tools ?? []
+          const ephemeral = tools.length === 0
+          const key = ephemeral ? `${affinity}:ephemeral` : affinity
+          // Hash non-system messages only — system prompts have dynamic
+          // content that changes between calls, causing false resets.
+          const msgs = (options.prompt as any[])
+            .filter((m: any) => m.role !== "system")
+            .map((m: any) => Hash.fast(JSON.stringify({ r: m.role, c: m.content })))
+          const prev = prompts.get(key)
+          const hasHistory = (options.prompt as any[]).some((m: any) => m.role === "assistant" || m.role === "tool")
+          const reset = prev ? diverged(prev, msgs) : hasHistory
+          prompts.set(key, msgs)
+          const headers = {
+            ...options.headers,
+            ...(ephemeral ? { "x-session-affinity": key } : {}),
+            ...(reset ? { "x-session-reset": "true" } : {}),
+          }
+          if (!reset && !ephemeral) return options
+          return { ...options, headers }
+        }
+
+        return {
+          autoload: true,
+          async getModel(_sdk: any, modelID: string, _options?: Record<string, any>) {
+            if (!sdk) {
+              sdk = createKiroAcp({
+                cwd: Instance.directory,
+                agent: "opencode",
+                trustAllTools: true,
+                  mcpTimeout: 45,
+              })
+            }
+            const context = Object.values(info.models).find((m) => m.api.id === modelID)?.limit?.context
+            const model = sdk.languageModel(modelID, { contextWindow: context })
+            return new Proxy(model, {
+              get(target: any, prop: string | symbol) {
+                if (prop === "doStream") return (opts: any) => target.doStream(intercept(opts))
+                if (prop === "doGenerate") return (opts: any) => target.doGenerate(intercept(opts))
+                return target[prop]
+              },
+            })
+          },
+        }
       }),
   }
 }

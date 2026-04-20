@@ -14,6 +14,7 @@ import { CodexAuthPlugin } from "./codex"
 import { Session } from "../session"
 import { NamedError } from "@opencode-ai/shared/util/error"
 import { CopilotAuthPlugin } from "./github-copilot/copilot"
+import { KiroACPAuthPlugin } from "./kiro-acp"
 import { gitlabAuthPlugin as GitlabAuthPlugin } from "opencode-gitlab-auth"
 import { PoeAuthPlugin } from "opencode-poe-auth"
 import { CloudflareAIGatewayAuthPlugin, CloudflareWorkersAuthPlugin } from "./cloudflare"
@@ -61,6 +62,7 @@ const INTERNAL_PLUGINS: PluginInstance[] = [
   PoeAuthPlugin,
   CloudflareWorkersAuthPlugin,
   CloudflareAIGatewayAuthPlugin,
+  KiroACPAuthPlugin,
 ]
 
 function isServerPlugin(value: unknown): value is PluginInstance {

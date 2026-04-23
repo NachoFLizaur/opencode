@@ -602,6 +602,7 @@ export const toModelMessagesEffect = Effect.fnUntraced(function* (
       const id = model.api.id.toLowerCase()
       return id.includes("gemini-3") && !id.includes("gemini-2")
     }
+    if (model.api.npm === "kiro-acp-ai-provider") return true
     return false
   })()
 

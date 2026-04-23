@@ -840,9 +840,23 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           const key = ephemeral ? `${affinity}:ephemeral` : affinity
           // Hash non-system messages only — system prompts have dynamic
           // content that changes between calls, causing false resets.
+          // Strip binary/image data from the hash so that serialization
+          // differences (Uint8Array vs base64) don't trigger false resets.
           const msgs = (options.prompt as any[])
             .filter((m: any) => m.role !== "system")
-            .map((m: any) => Hash.fast(JSON.stringify({ r: m.role, c: m.content })))
+            .map((m: any) => {
+              const content = Array.isArray(m.content)
+                ? m.content.map((p: any) => {
+                    if (p.type === "text") return { t: "text", v: p.text }
+                    if (p.type === "file") return { t: "file", m: p.mediaType, f: p.filename }
+                    if (p.type === "image") return { t: "image" }
+                    if (p.type === "tool-call") return { t: "tc", id: p.toolCallId, n: p.toolName }
+                    if (p.type === "tool-result") return { t: "tr", id: p.toolCallId }
+                    return { t: p.type }
+                  })
+                : m.content
+              return Hash.fast(JSON.stringify({ r: m.role, c: content }))
+            })
           const prev = prompts.get(key)
           const hasHistory = (options.prompt as any[]).some((m: any) => m.role === "assistant" || m.role === "tool")
           const reset = prev ? diverged(prev, msgs) : hasHistory
@@ -864,7 +878,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
                 cwd: Instance.directory,
                 agent: "opencode",
                 trustAllTools: true,
-                  mcpTimeout: 45,
+                mcpTimeout: 45,
               })
             }
             const context = Object.values(info.models).find((m) => m.api.id === modelID)?.limit?.context

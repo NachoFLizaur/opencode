@@ -125,12 +125,12 @@ export function SessionContextTab() {
     { equals: same },
   )
 
-  const metrics = createMemo(() => getSessionContextMetrics(messages(), providers.all()))
+  const metrics = createMemo(() => getSessionContextMetrics(messages(), [...providers.all().values()]))
   const ctx = createMemo(() => metrics().context)
   const formatter = createMemo(() => createSessionContextFormatter(language.intl()))
 
   const cost = createMemo(() => {
-    return formatCost(metrics().totalCost, metrics().context?.message.providerID)
+    return formatCost(metrics().totalCost, metrics().context?.message.providerID, language.intl())
   })
 
   const counts = createMemo(() => {

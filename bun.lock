@@ -500,7 +500,7 @@
         "ignore": "7.0.5",
         "immer": "11.1.4",
         "jsonc-parser": "3.3.1",
-        "kiro-acp-ai-provider": "1.7.8",
+        "kiro-acp-ai-provider": "1.7.9",
         "mime-types": "3.0.2",
         "minimatch": "10.0.3",
         "npm-package-arg": "13.0.2",
@@ -803,11 +803,10 @@
   ],
   "patchedDependencies": {
     "solid-js@1.9.10": "patches/solid-js@1.9.10.patch",
-    "virtua@0.49.1": "patches/virtua@0.49.1.patch",
-    "gcp-metadata@8.1.2": "patches/gcp-metadata@8.1.2.patch",
     "@ai-sdk/xai@3.0.82": "patches/@ai-sdk%2Fxai@3.0.82.patch",
     "@standard-community/standard-openapi@0.2.9": "patches/@standard-community%2Fstandard-openapi@0.2.9.patch",
     "@npmcli/agent@4.0.0": "patches/@npmcli%2Fagent@4.0.0.patch",
+    "gcp-metadata@8.1.2": "patches/gcp-metadata@8.1.2.patch",
   },
   "overrides": {
     "@types/bun": "catalog:",
@@ -3776,7 +3775,7 @@
 
     "kind-of": ["kind-of@6.0.3", "", {}, "sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw=="],
 
-    "kiro-acp-ai-provider": ["kiro-acp-ai-provider@1.7.8", "", { "peerDependencies": { "@ai-sdk/provider": ">=3.0.0" } }, "sha512-TNrkZFaMu9gWrNcNVvbKSOg5axoMkWZ8mcY3mG2QSRf0WTGJ+JL7ybjEM2IhYPo7QFxCA2gVu+rVwL2btXwpKQ=="],
+    "kiro-acp-ai-provider": ["kiro-acp-ai-provider@1.7.9", "", { "peerDependencies": { "@ai-sdk/provider": ">=3.0.0" } }, "sha512-U/nNatVYfoX5rv3KZ4oxCcWQWAc/fQGK90eQsULdTCuxrtO1ggMUJvP/4Eez6dWCUu6q5O2OKnU8cgrsh75BeQ=="],
 
     "kleur": ["kleur@4.1.5", "", {}, "sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ=="],
 

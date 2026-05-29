@@ -30,6 +30,3 @@ UPCOMING_CHANGELOG.md
 logs/
 *.bun-build
 tsconfig.tsbuildinfo
-
-# Corvus task planning artifacts
-.corvus/

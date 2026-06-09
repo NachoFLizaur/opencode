@@ -1,11 +1,11 @@
 import { test, expect, describe } from "bun:test"
 
-import { ProviderID } from "../../src/provider/schema"
+import { ProviderV2 } from "@opencode-ai/core/provider"
 import * as ProviderTransform from "../../src/provider/transform"
 
 // 1. Schema registration
 test("ProviderID.kiro resolves to 'kiro'", () => {
-  expect(String(ProviderID.kiro)).toBe("kiro")
+  expect(String(ProviderV2.ID.kiro)).toBe("kiro")
 })
 
 // 2. SDK import and factory

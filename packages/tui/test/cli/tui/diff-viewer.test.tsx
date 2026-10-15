@@ -69,6 +69,28 @@ test("closing the diff viewer returns to the route it opened from", async () => 
   }
 })
 
+test.each([80, 160])("standalone full-screen diff does not expose panel-only toggling at %i columns", async (width) => {
+  const viewer = await renderDiffViewer([], {
+    width,
+    initialRoute: {
+      type: "plugin",
+      id: "opencode.diffs",
+      name: "diff",
+      data: { sessionID: "session-1", returnRoute: startRoute, split: true },
+    },
+  })
+  try {
+    const command = viewer.commands.get("diff.toggle_fullscreen")
+    expect(typeof command?.enabled === "function" ? command.enabled() : command?.enabled).toBe(false)
+    const route = viewer.current()
+    viewer.app.mockInput.pressKey("f")
+    await viewer.app.flush()
+    expect(viewer.current()).toEqual(route)
+  } finally {
+    viewer.app.renderer.destroy()
+  }
+})
+
 test("ctrl+c closes the diff viewer without exiting the application", async () => {
   const viewer = await renderDiffViewer([])
 
@@ -1032,7 +1054,9 @@ test.each(["dark", "light"] as const)("the pane edge matches the visible reviewe
     const scroll = findScrollBox(viewer.app.renderer.root)!
     const expectEdge = (file: string, collapsed = false) => {
       const frame = viewer.app.captureSpans()
-      const edge = frame.lines[scroll.viewport.y - 1].spans.find((span) => span.width === scroll.viewport.width)!
+      // Full-screen cards are inset two columns from each pane edge.
+      const card = scroll.viewport.width - 4
+      const edge = frame.lines[scroll.viewport.y - 1].spans.find((span) => span.width === card)!
       const page = frame.lines[scroll.viewport.y - 1].spans.at(-1)!.bg
       const title = frame.lines[scroll.viewport.y].spans.find((span) => span.text.includes(file))!
       expect(title, viewer.app.captureCharFrame()).toBeDefined()
@@ -1040,12 +1064,14 @@ test.each(["dark", "light"] as const)("the pane edge matches the visible reviewe
       expect(edge.bg).toEqual(title.bg)
       expect(edge.bg).not.toEqual(page)
       expect(frame.lines[0].spans[0].bg).toEqual(frame.lines[1].spans.find((span) => span.text.includes("All"))!.bg)
-      const bottom = frame.lines[scroll.viewport.y + 1].spans.findLast((span) => span.text.includes("▀"))
+      const bottom = frame.lines[scroll.viewport.y + 1].spans.find(
+        (span) => span.text.includes("▀") && span.width === card,
+      )
       if (!collapsed) {
         expect(bottom).toBeUndefined()
         return
       }
-      expect(bottom?.text.trim()).toBe("▀".repeat(scroll.viewport.width))
+      expect(bottom?.text.trim()).toBe("▀".repeat(card))
       expect(bottom?.fg).toEqual(edge.bg)
       expect(bottom?.bg).toEqual(page)
     }
@@ -1069,7 +1095,8 @@ test.each(["dark", "light"] as const)("the pane edge matches the visible reviewe
     expectEdge("file0.txt", true)
     const second = viewer.app.renderer.root.findDescendantById("diff-file-header-1")!
     const frame = viewer.app.captureSpans()
-    expect(frame.lines[second.y - 1].spans.findLast((span) => span.text.includes("▄"))!.fg).toEqual(
+    // The gap's card segment sits between the two inset segments.
+    expect(frame.lines[second.y - 1].spans.find((span) => span.text.includes("▄") && span.width > 2)!.fg).toEqual(
       frame.lines[second.y].spans.find((span) => span.text.includes("file1.txt"))!.bg,
     )
 
@@ -1332,7 +1359,7 @@ test.each(["patch", "image", "fallback"] as const)(
       if (!(header instanceof BoxRenderable)) throw new Error("Missing reviewed file title")
       expect(header.parent?.height).toBe(header.height)
       expect(header.height).toBe(2)
-      expect(viewer.app.captureCharFrame().split("\n")[header.y + 1].trim()).toBe("▀".repeat(header.width))
+      expect(viewer.app.captureCharFrame().split("\n")[header.y + 1].trim()).toBe("▀".repeat(header.width + 4))
       expect(header.y).toBe(scroll.viewport.y)
       expect(viewer.app.captureCharFrame()).toContain(file.file)
       expect(viewer.app.captureCharFrame()).toContain("✓")
@@ -2001,6 +2028,7 @@ async function renderDiffViewer(
         },
         ui: {
           dialog: createDialogApi(dialog, (render) => render()),
+          panel: { open: () => false, close: () => {}, current: () => undefined },
           router: {
             register(page: Page) {
               if (page.name === "diff") renderDiff = page.render

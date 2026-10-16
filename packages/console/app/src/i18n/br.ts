@@ -142,12 +142,9 @@ export const dict = {
   "home.faq.a6":
     "OpenCode é 100% gratuito para usar. Ele também vem com um conjunto de modelos gratuitos. Pode haver custos adicionais se você conectar qualquer outro provedor.",
   "home.faq.q7": "E sobre dados e privacidade?",
-  "home.faq.a7.p1":
-    "Seus dados e informações só são armazenados quando você usa nossos modelos gratuitos ou cria links compartilháveis.",
+  "home.faq.a7.p1": "Seus dados e informações só são armazenados quando você usa nossos modelos gratuitos.",
   "home.faq.a7.p2.beforeModels": "Saiba mais sobre",
   "home.faq.a7.p2.modelsLink": "nossos modelos",
-  "home.faq.a7.p2.and": "e",
-  "home.faq.a7.p2.shareLink": "páginas de compartilhamento",
   "home.faq.q8": "OpenCode é código aberto?",
   "home.faq.a8.p1": "Sim, OpenCode é totalmente open source. O código-fonte é público no",
   "home.faq.a8.p2": "sob a",
@@ -223,7 +220,7 @@ export const dict = {
     "Todos os modelos Zen são hospedados nos EUA. Os provedores seguem uma política de retenção zero e não usam seus dados para treinamento de modelo, com as",
   "zen.privacy.exceptionsLink": "seguintes exceções",
 
-  "go.promo.gemini": "Gemini 4 Argon já está disponível com 2× mais uso por tempo limitado.",
+  "go.promo.step5": "Step 5 Preview já está disponível no Go com 4× mais uso por tempo limitado.",
   "go.title": "OpenCode Go | Modelos de codificação de baixo custo para todos",
   "go.meta.description":
     "O Go custa $10/mês, com limites generosos de uso e acesso confiável aos principais modelos de codificação.",
@@ -379,11 +376,6 @@ export const dict = {
   "download.faq.a5.p2.beforeZen":
     "Quaisquer custos adicionais virão da sua assinatura de um provedor de modelo. Embora o OpenCode funcione com qualquer provedor de modelo, recomendamos o uso do",
   "download.faq.a5.p2.afterZen": ".",
-
-  "download.faq.a6.p1":
-    "Seus dados e informações só são armazenados quando você cria links compartilháveis no OpenCode.",
-  "download.faq.a6.p2.beforeShare": "Saiba mais sobre",
-  "download.faq.a6.shareLink": "páginas de compartilhamento",
 
   "enterprise.title": "OpenCode | Soluções empresariais para sua organização",
   "enterprise.meta.description": "Contate a OpenCode para soluções empresariais",

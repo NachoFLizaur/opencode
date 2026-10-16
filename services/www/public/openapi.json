@@ -14163,6 +14163,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "temperature": {
+            "type": "boolean"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/Config.Model.Reasoning"
           }
         },
         "additionalProperties": false
@@ -14206,6 +14212,53 @@
         "required": ["input", "output"],
         "additionalProperties": false
       },
+      "Config.Model.Reasoning": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "supported": {
+                "type": "boolean",
+                "enum": [false]
+              }
+            },
+            "required": ["supported"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "supported": {
+                "type": "boolean",
+                "enum": [true]
+              },
+              "toggle": {
+                "type": "boolean"
+              },
+              "effort": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "budget": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": ["supported"],
+            "additionalProperties": false
+          }
+        ]
+      },
       "Config.Model.Settings": {
         "type": "object",
         "properties": {
@@ -14241,6 +14294,11 @@
           },
           "name": {
             "type": "string"
+          },
+          "releaseDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}(-\\d{2})?$",
+            "description": "Release date as YYYY-MM-DD or YYYY-MM"
           },
           "compatibility": {
             "$ref": "#/components/schemas/Model.Compatibility"
@@ -16648,6 +16706,9 @@
             "items": {
               "type": "string"
             }
+          },
+          "temperature": {
+            "type": "boolean"
           }
         },
         "required": ["tools", "input", "output"],

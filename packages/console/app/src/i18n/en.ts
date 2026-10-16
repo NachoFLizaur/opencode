@@ -141,11 +141,9 @@ export const dict = {
   "home.faq.a6":
     "OpenCode is 100% free to use. It also comes with a set of free models. There might be additional costs if you connect any other provider.",
   "home.faq.q7": "What about data and privacy?",
-  "home.faq.a7.p1": "Your data and information is only stored when you use our free models or create sharable links.",
+  "home.faq.a7.p1": "Your data and information is only stored when you use our free models.",
   "home.faq.a7.p2.beforeModels": "Learn more about",
   "home.faq.a7.p2.modelsLink": "our models",
-  "home.faq.a7.p2.and": "and",
-  "home.faq.a7.p2.shareLink": "share pages",
   "home.faq.q8": "Is OpenCode open source?",
   "home.faq.a8.p1": "Yes, OpenCode is fully open source. The source code is public on",
   "home.faq.a8.p2": "under the",
@@ -220,7 +218,7 @@ export const dict = {
     "All Zen models are hosted in the US. Providers follow a zero-retention policy and do not use your data for model training, with the",
   "zen.privacy.exceptionsLink": "following exceptions",
 
-  "go.promo.gemini": "Gemini 4 Argon is now available with 2× usage for a limited time.",
+  "go.promo.step5": "Step 5 Preview is now available in Go with 4× usage for a limited time.",
   "go.title": "OpenCode Go | Low cost coding models for everyone",
   "go.meta.description": "Go costs $10/month, with generous usage limits and reliable access to leading coding models.",
   "go.hero.title": "Low cost coding models for everyone",
@@ -373,10 +371,6 @@ export const dict = {
   "download.faq.a5.p2.beforeZen":
     "Any additional costs will come from your subscription to a model provider. While OpenCode works with any model provider, we recommend using",
   "download.faq.a5.p2.afterZen": ".",
-
-  "download.faq.a6.p1": "Your data and information is only stored when you create sharable links in OpenCode.",
-  "download.faq.a6.p2.beforeShare": "Learn more about",
-  "download.faq.a6.shareLink": "share pages",
 
   "enterprise.title": "OpenCode | Enterprise solutions for your organisation",
   "enterprise.meta.description": "Contact OpenCode for enterprise solutions",

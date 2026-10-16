@@ -1136,9 +1136,12 @@ export function Session(props: {
       title: "Copy last assistant message",
       id: "messages.copy",
       group: "Session",
+      slash: {
+        name: "copy",
+      },
       run: () => {
         const lastAssistantMessage = messagesBeforeRevert().findLast(
-          (msg): msg is SessionMessageAssistant => msg.type === "assistant",
+          (msg) => msg.type === "assistant" || (msg.type === "compaction" && msg.status === "completed" && msg.summary.trim() !== ""),
         )
         if (!lastAssistantMessage) {
           toast.show({ message: "No assistant messages found", variant: "error" })
@@ -1146,17 +1149,16 @@ export function Session(props: {
           return
         }
 
-        const textParts = lastAssistantMessage.content.filter((part) => part.type === "text")
-        if (textParts.length === 0) {
-          toast.show({ message: "No text parts found in last assistant message", variant: "error" })
-          dialog.clear()
-          return
-        }
-
-        const text = textParts
-          .map((part) => part.text)
-          .join("\n")
-          .trim()
+        const text =
+          lastAssistantMessage.type === "assistant"
+            ? lastAssistantMessage.content
+                .filter((part) => part.type === "text")
+                .map((part) => part.text)
+                .join("\n")
+                .trim()
+            : lastAssistantMessage.type === "compaction" && lastAssistantMessage.status === "completed"
+              ? lastAssistantMessage.summary.trim()
+              : ""
         if (!text) {
           toast.show({
             message: "No text content found in last assistant message",
@@ -1189,9 +1191,6 @@ export function Session(props: {
       title: "Copy session transcript",
       id: "session.copy",
       group: "Session",
-      slash: {
-        name: "copy",
-      },
       run: async () => {
         try {
           const sessionData = session()
